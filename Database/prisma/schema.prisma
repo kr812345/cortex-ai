@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}
+model Tenant {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  createdAt         DateTime            @default(now())
+  users             User[]
+  roles             Role[]
+  knowledge         CompanyKnowledge[]
+  agentTasks        AgentTask[]
+  leads             Lead[]
+  marketingCampaign MarketingCampaign[]
+  auditLogs         AuditLog[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String
+  password  String
+  tenantId  Int
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  roles     Role[]
+  auditLogs AuditLog[]
+  createdAt DateTime @default(now())
+
+  @@unique([email, tenantId])
+}
+
+enum Permission {
+  READ_LEADS
+  WRITE_LEADS
+  MANAGE_USERS
+  EXECUTE_AGENT_TASKS
+  MANAGE_CAMPAIGNS
+  READ_KNOWLEDGE
+  WRITE_KNOWLEDGE
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String
+  permissions Permission[]
+  tenantId    Int
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  users       User[]
+
+  @@unique([name, tenantId])
+}
+
+model CompanyKnowledge {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  embedding Unsupported("vector(768)")?
+  tenantId  Int
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AgentTask {
+  id          Int      @id @default(autoincrement())
+  agentName   String
+  description String
+  status      String   @default("PENDING")
+  result      String?
+  tenantId    Int
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lead {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  company   String?
+  score     Int      @default(0)
+  tenantId  Int
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, tenantId])
+}
+
+model MarketingCampaign {
+  id             Int      @id @default(autoincrement())
+  name           String
+  content        String
+  targetAudience String?
+  status         String   @default("DRAFT")
+  tenantId       Int
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  tenantId  Int?
+  action    String
+  resource  String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+}
