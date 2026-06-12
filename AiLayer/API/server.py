@@ -56,6 +56,9 @@ async def invoke_agent(request: Request):
     # Using mock stream for architectural scaffold
     return StreamingResponse(mock_agent_stream(query), media_type="text/event-stream")
 
+@app.get("/")
+def check_health(req):
+
 if __name__ == "__main__":
     import uvicorn
     # Start the API server
